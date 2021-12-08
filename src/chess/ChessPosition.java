@@ -25,7 +25,6 @@ public class ChessPosition {
 
 	protected Position ToPosition() {
 		return new Position(8 - row, column - 'a');
-
 	}
 
 	protected static ChessPosition fromPosition (Position position) {

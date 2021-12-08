@@ -13,7 +13,7 @@ public class Rook extends ChessPiece {
 
 	@Override
 	public String toString() {
-		return "R ";
+		return "R";
 	}
 
 	@Override
@@ -61,6 +61,7 @@ public class Rook extends ChessPiece {
 		if (getBoard().positionExists(p) && isThereOpponentPiece(p)) {
 			mat[p.getRow()][p.getColumn()] = true;
 		}
+
 		return mat;
 	}
 
