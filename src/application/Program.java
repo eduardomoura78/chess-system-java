@@ -36,6 +36,11 @@ public class Program {
 				System.out.println(e.getMessage());
 				sc.nextLine();
 			}
+			
+			catch(NullPointerException e){
+				System.out.println(e.getMessage());
+				sc.nextLine();
+			}
 		}
 	}
 }
