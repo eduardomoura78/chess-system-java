@@ -12,7 +12,6 @@ public class King extends ChessPiece {
 
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
-		return "K";
+		return "K ";
 	}
 }
