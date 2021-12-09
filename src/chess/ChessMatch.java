@@ -2,6 +2,7 @@ package chess;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import boardgame.Board;
 import boardgame.Piece;
@@ -14,7 +15,8 @@ public class ChessMatch {
 	private int turn;
 	private Color currentPlayer;
 	private Board board;
-	
+	private boolean check;
+
 	private List<Piece> piecesOnTheBoard = new ArrayList<>();
 	private List<Piece> capturedPieces = new ArrayList<>();
 
@@ -24,14 +26,18 @@ public class ChessMatch {
 		currentPlayer = Color.WHITE;
 		initialSetup();
 	}
-	
+
 	public int getTurn() {
-		return turn;		
+		return turn;
 	}
-	
+
 	public Color getCurrentPlayer() {
 		return currentPlayer;
-	}	
+	}
+
+	public boolean getCheck() {
+		return check;
+	}
 
 	public ChessPiece[][] getpieces() {
 		ChessPiece[][] mat = new ChessPiece[board.getRows()][board.getColumns()];
@@ -55,28 +61,46 @@ public class ChessMatch {
 		ValidateSourcePosition(source);
 		ValidateTargetPosition(source, target);
 		Piece capturedPiece = makeMove(source, target);
+		if (testCheck(currentPlayer)) {
+			undoMove(source, target, capturedPiece);
+			throw new ChessException("You can't put yourself in check");
+		}
+
+		check = (testCheck(opponent(currentPlayer))) ? true : false;
+
 		nextTurn();
 		return (ChessPiece) capturedPiece;
 	}
 
 	private Piece makeMove(Position source, Position target) {
 		Piece p = board.removePiece(source);
-		Piece capturePiece = board.removePiece(target);
+		Piece capturedPiece = board.removePiece(target);
 		board.placePiece(p, target);
-		
-		if(capturePiece != null) {
-			piecesOnTheBoard.remove(capturePiece);
-			capturedPieces.add(capturePiece);
+
+		if (capturedPiece != null) {
+			piecesOnTheBoard.remove(capturedPiece);
+			capturedPieces.add(capturedPiece);
 		}
-		return capturePiece;
+		return capturedPiece;
+	}
+
+	private void undoMove(Position source, Position target, Piece capturedpiece) {
+		Piece p = board.removePiece(target);
+		board.placePiece(p, source);
+
+		if (capturedpiece != null) {
+			board.placePiece(capturedpiece, target);
+			capturedPieces.remove(capturedpiece);
+			piecesOnTheBoard.add(capturedpiece);
+		}
 	}
 
 	private void ValidateSourcePosition(Position position) {
 		if (!board.thereIsAPiece(position)) {
 			throw new ChessException("There is no piece on source position.");
 		}
-		
-		if (currentPlayer !=((ChessPiece)board.piece(position)).getColor()) {
+
+		if (currentPlayer != ((ChessPiece) board.piece(position)).getColor()) {
 			throw new ChessException("The chosen piece is not yours.");
 		}
 		if (!board.piece(position).isThereAnyPossibleMove()) {
@@ -89,16 +113,43 @@ public class ChessMatch {
 			throw new ChessException("The chosen piece can't move to the target position.");
 		}
 	}
-	
+
 	private void nextTurn() {
 		turn++;
-		currentPlayer = (currentPlayer == Color.WHITE)? Color.BLACK: Color.WHITE;		
+		currentPlayer = (currentPlayer == Color.WHITE) ? Color.BLACK : Color.WHITE;
 	}
 
 	private void placeNewPiece(char column, int row, ChessPiece piece) {
 		board.placePiece(piece, new ChessPosition(column, row).ToPosition());
 		piecesOnTheBoard.add(piece);
+	}
 
+	private Color opponent(Color color) {
+		return (color == Color.WHITE) ? Color.BLACK : Color.WHITE;
+	}
+
+	private ChessPiece king(Color color) {
+		List<Piece> list = piecesOnTheBoard.stream().filter(x -> ((ChessPiece) x).getColor() == color)
+				.collect(Collectors.toList());
+		for (Piece p : list) {
+			if (p instanceof King) {
+				return (ChessPiece)p;
+			}
+		}
+		throw new IllegalStateException("There is no " + color + "King on the board");
+	}
+
+	private boolean testCheck(Color color) {
+		Position KingPosition = king(color).getChessPosition().ToPosition();
+		List<Piece> opponentPieces = piecesOnTheBoard.stream()
+				.filter(x -> ((ChessPiece) x).getColor() == opponent(color)).collect(Collectors.toList());
+		for (Piece p : opponentPieces) {
+			boolean[][] mat = p.possibleMoves();
+			if (mat[KingPosition.getRow()][KingPosition.getColumn()]) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void initialSetup() {
